@@ -3,17 +3,21 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
 public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
-    private static final Path DIRECTORY = Paths.get(".");
+
+    private final Path sourceDirectory;
+    private final Path targetDirectory;
     private final LinkedList<String> keywords;
 
-    public OctopusFileCrawler(final String... keywords) {
+    public OctopusFileCrawler(final String sourceDirectory, final String targetDirectory, final String... keywords) {
+        this.sourceDirectory = Path.of(sourceDirectory);
+        this.targetDirectory = Path.of(targetDirectory);
         this.keywords = new LinkedList<>(List.of(keywords));
     }
 
@@ -21,15 +25,18 @@ public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
     public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
         try {
             if (containsKeywords(file)) {
-                System.out.println(file);
+                final Path destinationPath = targetDirectory.resolve(file.getFileName());
+                Files.copy(file, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println(file + " is copied to " + destinationPath);
             }
         } catch (final Exception e) {
+            System.out.println(e);
         }
         return FileVisitResult.CONTINUE;
     }
 
     public void crawl() throws IOException {
-        Files.walkFileTree(DIRECTORY, this);
+        Files.walkFileTree(sourceDirectory, this);
     }
 
     public boolean containsKeywords(final Path file) throws IOException {
@@ -50,7 +57,4 @@ public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
         }
     }
 
-    public static void main(final String... args) throws IOException {
-        new OctopusFileCrawler(args).crawl();
-    }
 }
