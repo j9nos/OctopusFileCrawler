@@ -30,7 +30,6 @@ public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
                 System.out.println(file + " is copied to " + destinationPath);
             }
         } catch (final Exception e) {
-            System.out.println(e);
         }
         return FileVisitResult.CONTINUE;
     }
