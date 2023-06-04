@@ -6,14 +6,16 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
+public class OctopusFileCrawler {
 
     private final Path sourceDirectory;
     private final Path targetDirectory;
     private final LinkedList<String> keywords;
+    private final HashMap<Path, Integer> fileHistory = new HashMap<>();
 
     public OctopusFileCrawler(final String sourceDirectory, final String targetDirectory, final String... keywords) {
         this.sourceDirectory = Path.of(sourceDirectory);
@@ -21,24 +23,22 @@ public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
         this.keywords = new LinkedList<>(List.of(keywords));
     }
 
-    @Override
-    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-        try {
-            if (containsKeywords(file)) {
-                final Path destinationPath = targetDirectory.resolve(file.getFileName());
-                Files.copy(file, destinationPath, StandardCopyOption.REPLACE_EXISTING);
-                System.out.println(file + " is copied to " + destinationPath);
-            }
-        } catch (final Exception e) {
-        }
-        return FileVisitResult.CONTINUE;
-    }
-
     public void crawl() throws IOException {
-        Files.walkFileTree(sourceDirectory, this);
+        Files.walkFileTree(sourceDirectory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                try {
+                    if (containsKeywords(file)) {
+                        copyFile(file);
+                    }
+                } catch (final Exception e) {
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
-    public boolean containsKeywords(final Path file) throws IOException {
+    private boolean containsKeywords(final Path file) throws IOException {
         final LinkedList<String> copy = new LinkedList<>(keywords);
         try (BufferedReader br = Files.newBufferedReader(file)) {
             String line;
@@ -54,6 +54,18 @@ public class OctopusFileCrawler extends SimpleFileVisitor<Path> {
             }
             return copy.size() == 0;
         }
+    }
+
+    private void copyFile(final Path file) throws IOException {
+        final Path fileName = file.getFileName();
+        Integer fileCount = fileHistory.get(fileName);
+        if (fileCount == null) {
+            fileCount = 0;
+        }
+        fileHistory.put(fileName, fileCount += 1);
+        final Path destinationPath = targetDirectory.resolve(fileCount + "_" + fileName);
+        Files.copy(file, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+        System.out.println(file + " is copied to " + destinationPath);
     }
 
 }
