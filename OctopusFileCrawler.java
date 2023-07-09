@@ -40,7 +40,7 @@ public class OctopusFileCrawler {
 
     private boolean containsKeywords(final Path file) throws IOException {
         final LinkedList<String> copy = new LinkedList<>(keywords);
-        try (BufferedReader br = Files.newBufferedReader(file)) {
+        try (final BufferedReader br = Files.newBufferedReader(file)) {
             String line;
             while ((line = br.readLine()) != null) {
                 for (int i = copy.size() - 1; i >= 0; i--) {
